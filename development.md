@@ -1,207 +1,397 @@
-# FastAPI Project - Development
+# Kondition Development Guide
 
-## Docker Compose
+This document provides guidelines and instructions for developers working on the Kondition fitness motivator application. It covers development setup, coding standards, workflow, and best practices.
 
-* Start the local stack with Docker Compose:
+## Getting Started
+
+### Prerequisites
+
+- **Node.js** (v16+) and npm/yarn
+- **Python** (v3.9+)
+- **PostgreSQL** (v13+)
+- **Docker** and Docker Compose
+- **Git**
+- **Expo CLI** (`npm install -g expo-cli`)
+
+### Repository Setup
+
+1. **Clone the repository**
 
 ```bash
-docker compose watch
+git clone <repository-url>
+cd PROJECT/KonditionFastAPI
 ```
 
-* Now you can open your browser and interact with these URLs:
-
-Frontend, built with Docker, with routes handled based on the path: http://localhost:5173
-
-Backend, JSON based web API based on OpenAPI: http://localhost:8000
-
-Automatic interactive documentation with Swagger UI (from the OpenAPI backend): http://localhost:8000/docs
-
-Adminer, database web administration: http://localhost:8080
-
-Traefik UI, to see how the routes are being handled by the proxy: http://localhost:8090
-
-**Note**: The first time you start your stack, it might take a minute for it to be ready. While the backend waits for the database to be ready and configures everything. You can check the logs to monitor it.
-
-To check the logs, run (in another terminal):
+2. **Set up the backend**
 
 ```bash
-docker compose logs
-```
-
-To check the logs of a specific service, add the name of the service, e.g.:
-
-```bash
-docker compose logs backend
-```
-
-## Local Development
-
-The Docker Compose files are configured so that each of the services is available in a different port in `localhost`.
-
-For the backend and frontend, they use the same port that would be used by their local development server, so, the backend is at `http://localhost:8000` and the frontend at `http://localhost:5173`.
-
-This way, you could turn off a Docker Compose service and start its local development service, and everything would keep working, because it all uses the same ports.
-
-For example, you can stop that `frontend` service in the Docker Compose, in another terminal, run:
-
-```bash
-docker compose stop frontend
-```
-
-And then start the local frontend development server:
-
-```bash
-cd frontend
-npm run dev
-```
-
-Or you could stop the `backend` Docker Compose service:
-
-```bash
-docker compose stop backend
-```
-
-And then you can run the local development server for the backend:
-
-```bash
+# Create a virtual environment
 cd backend
-fastapi dev app/main.py
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -e .
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your local configuration
+
+# Run migrations
+alembic upgrade head
+
+# Start the development server
+uvicorn app.main:app --reload
 ```
 
-## Docker Compose in `localhost.tiangolo.com`
-
-When you start the Docker Compose stack, it uses `localhost` by default, with different ports for each service (backend, frontend, adminer, etc).
-
-When you deploy it to production (or staging), it will deploy each service in a different subdomain, like `api.example.com` for the backend and `dashboard.example.com` for the frontend.
-
-In the guide about [deployment](deployment.md) you can read about Traefik, the configured proxy. That's the component in charge of transmitting traffic to each service based on the subdomain.
-
-If you want to test that it's all working locally, you can edit the local `.env` file, and change:
-
-```dotenv
-DOMAIN=localhost.tiangolo.com
-```
-
-That will be used by the Docker Compose files to configure the base domain for the services.
-
-Traefik will use this to transmit traffic at `api.localhost.tiangolo.com` to the backend, and traffic at `dashboard.localhost.tiangolo.com` to the frontend.
-
-The domain `localhost.tiangolo.com` is a special domain that is configured (with all its subdomains) to point to `127.0.0.1`. This way you can use that for your local development.
-
-After you update it, run again:
+3. **Set up the frontend**
 
 ```bash
-docker compose watch
+# Navigate to the Expo app directory
+cd ../KonditionExpo
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm start
 ```
 
-When deploying, for example in production, the main Traefik is configured outside of the Docker Compose files. For local development, there's an included Traefik in `docker-compose.override.yml`, just to let you test that the domains work as expected, for example with `api.localhost.tiangolo.com` and `dashboard.localhost.tiangolo.com`.
-
-## Docker Compose files and env vars
-
-There is a main `docker-compose.yml` file with all the configurations that apply to the whole stack, it is used automatically by `docker compose`.
-
-And there's also a `docker-compose.override.yml` with overrides for development, for example to mount the source code as a volume. It is used automatically by `docker compose` to apply overrides on top of `docker-compose.yml`.
-
-These Docker Compose files use the `.env` file containing configurations to be injected as environment variables in the containers.
-
-They also use some additional configurations taken from environment variables set in the scripts before calling the `docker compose` command.
-
-After changing variables, make sure you restart the stack:
+### Docker Setup (Alternative)
 
 ```bash
-docker compose watch
+# From the project root
+docker-compose up -d
+
+# Run migrations
+docker-compose exec backend alembic upgrade head
+
+# Create initial data
+docker-compose exec backend python -m app.initial_data
 ```
 
-## The .env file
+## Development Workflow
 
-The `.env` file is the one that contains all your configurations, generated keys and passwords, etc.
+### Git Workflow
 
-Depending on your workflow, you could want to exclude it from Git, for example if your project is public. In that case, you would have to make sure to set up a way for your CI tools to obtain it while building or deploying your project.
+We follow a feature branch workflow:
 
-One way to do it could be to add each environment variable to your CI/CD system, and updating the `docker-compose.yml` file to read that specific env var instead of reading the `.env` file.
-
-## Pre-commits and code linting
-
-we are using a tool called [pre-commit](https://pre-commit.com/) for code linting and formatting.
-
-When you install it, it runs right before making a commit in git. This way it ensures that the code is consistent and formatted even before it is committed.
-
-You can find a file `.pre-commit-config.yaml` with configurations at the root of the project.
-
-#### Install pre-commit to run automatically
-
-`pre-commit` is already part of the dependencies of the project, but you could also install it globally if you prefer to, following [the official pre-commit docs](https://pre-commit.com/).
-
-After having the `pre-commit` tool installed and available, you need to "install" it in the local repository, so that it runs automatically before each commit.
-
-Using `uv`, you could do it with:
+1. **Create a feature branch**
 
 ```bash
-❯ uv run pre-commit install
-pre-commit installed at .git/hooks/pre-commit
+git checkout -b feature/your-feature-name
 ```
 
-Now whenever you try to commit, e.g. with:
+2. **Make changes and commit**
 
 ```bash
-git commit
+git add .
+git commit -m "Descriptive commit message"
 ```
 
-...pre-commit will run and check and format the code you are about to commit, and will ask you to add that code (stage it) with git again before committing.
-
-Then you can `git add` the modified/fixed files again and now you can commit.
-
-#### Running pre-commit hooks manually
-
-you can also run `pre-commit` manually on all the files, you can do it using `uv` with:
+3. **Push changes and create a pull request**
 
 ```bash
-❯ uv run pre-commit run --all-files
-check for added large files..............................................Passed
-check toml...............................................................Passed
-check yaml...............................................................Passed
-ruff.....................................................................Passed
-ruff-format..............................................................Passed
-eslint...................................................................Passed
-prettier.................................................................Passed
+git push origin feature/your-feature-name
 ```
 
-## URLs
+4. **After review and approval, merge to main**
 
-The production or staging URLs would use these same paths, but with your own domain.
+### Sprint Cycle
 
-### Development URLs
+- **Sprint Planning**: Define tasks and assign story points
+- **Daily Standup**: Brief updates on progress and blockers
+- **Sprint Review**: Demo completed features
+- **Sprint Retrospective**: Discuss what went well and what could be improved
 
-Development URLs, for local development.
+### Task Management
 
-Frontend: http://localhost:5173
+- Use the project board for task tracking
+- Move tasks through the workflow: To Do → In Progress → Review → Done
+- Link commits and PRs to relevant tasks
 
-Backend: http://localhost:8000
+## Coding Standards
 
-Automatic Interactive Docs (Swagger UI): http://localhost:8000/docs
+### General Guidelines
 
-Automatic Alternative Docs (ReDoc): http://localhost:8000/redoc
+- Write clean, readable, and maintainable code
+- Follow the principle of "Do One Thing" (DOT)
+- Keep functions and methods small and focused
+- Use meaningful variable and function names
+- Add comments for complex logic, but prefer self-documenting code
+- Write tests for new features and bug fixes
 
-Adminer: http://localhost:8080
+### Frontend (React Native/Expo)
 
-Traefik UI: http://localhost:8090
+#### Style Guide
 
-MailCatcher: http://localhost:1080
+- Follow the [Airbnb React/JSX Style Guide](https://github.com/airbnb/javascript/tree/master/react)
+- Use TypeScript for type safety
+- Use functional components with hooks
+- Organize imports alphabetically
+- Use consistent naming conventions:
+  - Components: PascalCase (e.g., `LoginScreen.tsx`)
+  - Hooks: camelCase with 'use' prefix (e.g., `useAuth.ts`)
+  - Utilities: camelCase (e.g., `formatDate.ts`)
 
-### Development URLs with `localhost.tiangolo.com` Configured
+#### Component Structure
 
-Development URLs, for local development.
+```typescript
+// Import statements
+import React, { useState } from 'react';
+import { View, Text } from 'react-native';
 
-Frontend: http://dashboard.localhost.tiangolo.com
+// Type definitions
+interface Props {
+  title: string;
+  onPress: () => void;
+}
 
-Backend: http://api.localhost.tiangolo.com
+// Component definition
+export const MyComponent: React.FC<Props> = ({ title, onPress }) => {
+  // State and hooks
+  const [isActive, setIsActive] = useState(false);
+  
+  // Event handlers
+  const handlePress = () => {
+    setIsActive(!isActive);
+    onPress();
+  };
+  
+  // Render
+  return (
+    <View>
+      <Text>{title}</Text>
+    </View>
+  );
+};
 
-Automatic Interactive Docs (Swagger UI): http://api.localhost.tiangolo.com/docs
+// Styles
+const styles = StyleSheet.create({
+  container: {
+    // styles here
+  },
+});
+```
 
-Automatic Alternative Docs (ReDoc): http://api.localhost.tiangolo.com/redoc
+#### State Management
 
-Adminer: http://localhost.tiangolo.com:8080
+- Use React's built-in state management (useState, useReducer) for component-level state
+- Use context API for shared state across components
+- Consider Redux or MobX for complex state management needs
 
-Traefik UI: http://localhost.tiangolo.com:8090
+### Backend (FastAPI)
 
-MailCatcher: http://localhost.tiangolo.com:1080
+#### Style Guide
+
+- Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/) guidelines
+- Use type hints for better IDE support and documentation
+- Use docstrings to document functions, classes, and modules
+- Format code with Black and isort
+- Use meaningful variable and function names
+- Keep functions and methods small and focused
+
+#### API Structure
+
+- Organize endpoints by resource
+- Use appropriate HTTP methods:
+  - GET: Retrieve resources
+  - POST: Create resources
+  - PUT/PATCH: Update resources
+  - DELETE: Remove resources
+- Return appropriate status codes
+- Use Pydantic models for request/response validation
+- Implement proper error handling
+
+#### Example Endpoint
+
+```python
+@router.post("/items/", response_model=Item)
+def create_item(
+    *,
+    session: SessionDep,
+    item_in: ItemCreate,
+    current_user: CurrentUser,
+) -> Any:
+    """
+    Create a new item.
+    """
+    item = Item(
+        title=item_in.title,
+        description=item_in.description,
+        owner_id=current_user.id,
+    )
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+    return item
+```
+
+## Testing
+
+### Frontend Testing
+
+- Use Jest for unit and component testing
+- Use React Native Testing Library for component testing
+- Write tests for components, hooks, and utilities
+- Run tests with `npm test`
+
+### Backend Testing
+
+- Use pytest for unit and integration testing
+- Write tests for API endpoints, CRUD operations, and utilities
+- Run tests with `pytest`
+- Check coverage with `pytest --cov=app`
+
+### End-to-End Testing
+
+- Use Detox or Appium for mobile app E2E testing
+- Test critical user flows:
+  - Authentication
+  - Workout logging
+  - Progress tracking
+  - Social features
+
+## Debugging
+
+### Frontend Debugging
+
+- Use React Native Debugger
+- Use console.log for simple debugging
+- Use breakpoints in VS Code
+- Check the Metro bundler console for errors
+
+### Backend Debugging
+
+- Use pdb or VS Code debugger
+- Check FastAPI logs
+- Use Swagger UI for API testing
+- Monitor database queries with logging
+
+## Deployment
+
+### Frontend Deployment
+
+- Build the app with Expo:
+  ```bash
+  expo build:android
+  expo build:ios
+  ```
+- Submit to app stores:
+  - Google Play Store
+  - Apple App Store
+
+### Backend Deployment
+
+- Build and deploy with Docker:
+  ```bash
+  docker-compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
+  ```
+- Set up CI/CD pipeline for automated deployment
+- Configure environment variables for production
+
+## Performance Considerations
+
+### Frontend Performance
+
+- Optimize list rendering with FlatList
+- Use memo and useMemo to prevent unnecessary re-renders
+- Optimize images and assets
+- Implement lazy loading for heavy components
+- Use performance monitoring tools
+
+### Backend Performance
+
+- Use database indexes for frequently queried fields
+- Implement caching for expensive operations
+- Use async operations for I/O-bound tasks
+- Monitor and optimize database queries
+- Implement pagination for large data sets
+
+## Security Best Practices
+
+### Frontend Security
+
+- Validate user input
+- Securely store sensitive data (tokens, user info)
+- Implement proper authentication flows
+- Use HTTPS for all API requests
+- Keep dependencies updated
+
+### Backend Security
+
+- Implement proper authentication and authorization
+- Use secure password hashing
+- Validate and sanitize input data
+- Implement rate limiting
+- Use HTTPS
+- Keep dependencies updated
+- Follow the principle of least privilege
+
+## Accessibility
+
+- Ensure proper contrast ratios
+- Provide text alternatives for images
+- Support screen readers
+- Implement keyboard navigation
+- Test with accessibility tools
+
+## Internationalization
+
+- Use a translation framework (i18n)
+- Extract all user-facing strings
+- Support right-to-left languages
+- Consider cultural differences in design
+
+## Resources
+
+### Documentation
+
+- [React Native Documentation](https://reactnative.dev/docs/getting-started)
+- [Expo Documentation](https://docs.expo.dev/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [SQLModel Documentation](https://sqlmodel.tiangolo.com/)
+
+### Learning Resources
+
+- [React Native in Action](https://www.manning.com/books/react-native-in-action)
+- [FastAPI for Data Scientists](https://fastapi.tiangolo.com/tutorial/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+- [Python Best Practices](https://docs.python-guide.org/)
+
+### Tools
+
+- [VS Code](https://code.visualstudio.com/) with extensions:
+  - ESLint
+  - Prettier
+  - Python
+  - React Native Tools
+- [Postman](https://www.postman.com/) for API testing
+- [React Native Debugger](https://github.com/jhen0409/react-native-debugger)
+- [pgAdmin](https://www.pgadmin.org/) for PostgreSQL management
+
+## Troubleshooting
+
+### Common Issues
+
+#### Frontend
+
+- **Metro bundler issues**: Clear cache with `expo start -c`
+- **Dependency conflicts**: Check package versions and resolve conflicts
+- **Expo build errors**: Verify Expo SDK compatibility
+- **Styling inconsistencies**: Use theme-aware components consistently
+
+#### Backend
+
+- **Database connection issues**: Check connection string and credentials
+- **Migration errors**: Ensure migrations are applied in the correct order
+- **API errors**: Check request/response formats and validation
+- **Authentication issues**: Verify token generation and validation
+
+## Contact
+
+For questions or assistance, contact the project maintainers:
+
+- Frontend: [frontend-lead@example.com](mailto:frontend-lead@example.com)
+- Backend: [backend-lead@example.com](mailto:backend-lead@example.com)
+- DevOps: [devops-lead@example.com](mailto:devops-lead@example.com)

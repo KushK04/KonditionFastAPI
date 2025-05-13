@@ -1,309 +1,686 @@
-# FastAPI Project - Deployment
+# Kondition Deployment Guide
 
-You can deploy the project using Docker Compose to a remote server.
+This document provides instructions for deploying the Kondition fitness motivator application to production environments. It covers Docker setup, environment configuration, and monitoring.
 
-This project expects you to have a Traefik proxy handling communication to the outside world and HTTPS certificates.
+## Prerequisites
 
-You can use CI/CD (continuous integration and continuous deployment) systems to deploy automatically, there are already configurations to do it with GitHub Actions.
+- Docker and Docker Compose
+- Domain name with DNS configured
+- SSL certificate (Let's Encrypt recommended)
+- Server with at least 2GB RAM and 1 CPU core
+- PostgreSQL database (can be containerized or external)
 
-But you have to configure a couple things first. 🤓
+## Deployment Options
 
-## Preparation
+### Option 1: Docker Compose Deployment
 
-* Have a remote server ready and available.
-* Configure the DNS records of your domain to point to the IP of the server you just created.
-* Configure a wildcard subdomain for your domain, so that you can have multiple subdomains for different services, e.g. `*.fastapi-project.example.com`. This will be useful for accessing different components, like `dashboard.fastapi-project.example.com`, `api.fastapi-project.example.com`, `traefik.fastapi-project.example.com`, `adminer.fastapi-project.example.com`, etc. And also for `staging`, like `dashboard.staging.fastapi-project.example.com`, `adminer.staging..fastapi-project.example.com`, etc.
-* Install and configure [Docker](https://docs.docker.com/engine/install/) on the remote server (Docker Engine, not Docker Desktop).
+This is the recommended approach for most deployments.
 
-## Public Traefik
-
-We need a Traefik proxy to handle incoming connections and HTTPS certificates.
-
-You need to do these next steps only once.
-
-### Traefik Docker Compose
-
-* Create a remote directory to store your Traefik Docker Compose file:
+#### 1. Clone the Repository
 
 ```bash
-mkdir -p /root/code/traefik-public/
+git clone <repository-url>
+cd PROJECT/KonditionFastAPI
 ```
 
-Copy the Traefik Docker Compose file to your server. You could do it by running the command `rsync` in your local terminal:
+#### 2. Configure Environment Variables
+
+Create a `.env` file in the project root:
+
+```
+# Backend
+POSTGRES_SERVER=db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=<secure-password>
+POSTGRES_DB=kondition
+FIRST_SUPERUSER=admin@example.com
+FIRST_SUPERUSER_PASSWORD=<secure-password>
+SECRET_KEY=<generate-secret-key>
+BACKEND_CORS_ORIGINS=["https://yourdomain.com","https://www.yourdomain.com"]
+SENTRY_DSN=<your-sentry-dsn>
+ENVIRONMENT=production
+SMTP_TLS=True
+SMTP_PORT=587
+SMTP_HOST=<smtp-server>
+SMTP_USER=<smtp-user>
+SMTP_PASSWORD=<smtp-password>
+EMAILS_FROM_EMAIL=info@yourdomain.com
+
+# Frontend
+API_URL=https://api.yourdomain.com
+```
+
+#### 3. Configure Docker Compose
+
+Review and update the `docker-compose.yml` and `docker-compose.traefik.yml` files as needed.
+
+#### 4. Deploy with Docker Compose
 
 ```bash
-rsync -a docker-compose.traefik.yml root@your-server.example.com:/root/code/traefik-public/
+# Build and start the containers
+docker-compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
+
+# Run migrations
+docker-compose exec backend alembic upgrade head
+
+# Create initial data
+docker-compose exec backend python -m app.initial_data
 ```
 
-### Traefik Public Network
+#### 5. Verify Deployment
 
-This Traefik will expect a Docker "public network" named `traefik-public` to communicate with your stack(s).
+- Backend API: https://api.yourdomain.com/docs
+- Frontend: https://yourdomain.com
 
-This way, there will be a single public Traefik proxy that handles the communication (HTTP and HTTPS) with the outside world, and then behind that, you could have one or more stacks with different domains, even if they are on the same single server.
+### Option 2: Kubernetes Deployment
 
-To create a Docker "public network" named `traefik-public` run the following command in your remote server:
+For larger-scale deployments, Kubernetes provides better scalability and management.
+
+#### 1. Prepare Kubernetes Configuration
+
+Create Kubernetes manifests in a `k8s` directory:
+
+- `namespace.yaml`: Define a namespace for the application
+- `secrets.yaml`: Store sensitive information
+- `configmap.yaml`: Store configuration
+- `deployment-backend.yaml`: Backend deployment
+- `deployment-frontend.yaml`: Frontend deployment
+- `service-backend.yaml`: Backend service
+- `service-frontend.yaml`: Frontend service
+- `ingress.yaml`: Ingress configuration
+
+#### 2. Deploy to Kubernetes
 
 ```bash
-docker network create traefik-public
+# Create namespace
+kubectl apply -f k8s/namespace.yaml
+
+# Apply secrets and configmap
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/configmap.yaml
+
+# Deploy backend
+kubectl apply -f k8s/deployment-backend.yaml
+kubectl apply -f k8s/service-backend.yaml
+
+# Deploy frontend
+kubectl apply -f k8s/deployment-frontend.yaml
+kubectl apply -f k8s/service-frontend.yaml
+
+# Configure ingress
+kubectl apply -f k8s/ingress.yaml
 ```
 
-### Traefik Environment Variables
-
-The Traefik Docker Compose file expects some environment variables to be set in your terminal before starting it. You can do it by running the following commands in your remote server.
-
-* Create the username for HTTP Basic Auth, e.g.:
+#### 3. Run Migrations
 
 ```bash
-export USERNAME=admin
+# Get a pod name
+BACKEND_POD=$(kubectl get pods -n kondition -l app=backend -o jsonpath="{.items[0].metadata.name}")
+
+# Run migrations
+kubectl exec -it $BACKEND_POD -n kondition -- alembic upgrade head
+
+# Create initial data
+kubectl exec -it $BACKEND_POD -n kondition -- python -m app.initial_data
 ```
 
-* Create an environment variable with the password for HTTP Basic Auth, e.g.:
+## Mobile App Deployment
+
+### Building the Mobile App
+
+#### 1. Configure Environment
+
+Update the environment configuration in the Expo app:
+
+```javascript
+// app.config.js
+export default {
+  expo: {
+    // ... other config
+    extra: {
+      apiUrl: process.env.API_URL || "https://api.yourdomain.com",
+    },
+  },
+};
+```
+
+#### 2. Build for Android
 
 ```bash
-export PASSWORD=changethis
+cd KonditionExpo
+
+# Build APK
+eas build -p android --profile preview
+
+# Build for Play Store
+eas build -p android --profile production
 ```
 
-* Use openssl to generate the "hashed" version of the password for HTTP Basic Auth and store it in an environment variable:
+#### 3. Build for iOS
 
 ```bash
-export HASHED_PASSWORD=$(openssl passwd -apr1 $PASSWORD)
+cd KonditionExpo
+
+# Build for TestFlight
+eas build -p ios --profile preview
+
+# Build for App Store
+eas build -p ios --profile production
 ```
 
-To verify that the hashed password is correct, you can print it:
+#### 4. Submit to App Stores
+
+Follow the guidelines for submitting apps to:
+- [Google Play Store](https://developer.android.com/distribute/console)
+- [Apple App Store](https://developer.apple.com/app-store/submissions/)
+
+## SSL Configuration
+
+### Using Let's Encrypt with Traefik
+
+Traefik can automatically obtain and renew SSL certificates from Let's Encrypt.
+
+In `docker-compose.traefik.yml`:
+
+```yaml
+services:
+  traefik:
+    image: traefik:v2.5
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml
+      - ./traefik/acme.json:/acme.json
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.email=your-email@example.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/acme.json"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+```
+
+Create an empty `acme.json` file and set proper permissions:
 
 ```bash
-echo $HASHED_PASSWORD
+touch traefik/acme.json
+chmod 600 traefik/acme.json
 ```
 
-* Create an environment variable with the domain name for your server, e.g.:
+## Database Management
+
+### Backup and Restore
+
+#### Backup PostgreSQL Database
 
 ```bash
-export DOMAIN=fastapi-project.example.com
+# Using Docker Compose
+docker-compose exec db pg_dump -U postgres kondition > backup_$(date +%Y-%m-%d).sql
+
+# Using external PostgreSQL
+pg_dump -h <host> -U <user> -d kondition > backup_$(date +%Y-%m-%d).sql
 ```
 
-* Create an environment variable with the email for Let's Encrypt, e.g.:
+#### Restore PostgreSQL Database
 
 ```bash
-export EMAIL=admin@example.com
+# Using Docker Compose
+cat backup.sql | docker-compose exec -T db psql -U postgres -d kondition
+
+# Using external PostgreSQL
+psql -h <host> -U <user> -d kondition < backup.sql
 ```
 
-**Note**: you need to set a different email, an email `@example.com` won't work.
-
-### Start the Traefik Docker Compose
-
-Go to the directory where you copied the Traefik Docker Compose file in your remote server:
+### Database Migrations
 
 ```bash
-cd /root/code/traefik-public/
+# Using Docker Compose
+docker-compose exec backend alembic upgrade head
+
+# Using Kubernetes
+kubectl exec -it $BACKEND_POD -n kondition -- alembic upgrade head
 ```
 
-Now with the environment variables set and the `docker-compose.traefik.yml` in place, you can start the Traefik Docker Compose running the following command:
+## Monitoring and Logging
+
+### Prometheus and Grafana Setup
+
+Add Prometheus and Grafana to your Docker Compose setup:
+
+```yaml
+services:
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:
+```
+
+### ELK Stack for Logging
+
+Add ELK (Elasticsearch, Logstash, Kibana) to your Docker Compose setup:
+
+```yaml
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.14.0
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.14.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+volumes:
+  elasticsearch_data:
+```
+
+### Sentry Integration
+
+1. Create a Sentry account and project at [sentry.io](https://sentry.io)
+2. Get your DSN and add it to your environment variables:
+
+```
+SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
+```
+
+3. Sentry is already integrated in the FastAPI backend:
+
+```python
+if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
+    sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
+```
+
+## CI/CD Pipeline
+
+### GitHub Actions
+
+Create a `.github/workflows/deploy.yml` file:
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          
+      - name: Deploy to production
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd ${{ secrets.PROJECT_PATH }} && git pull && docker-compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build && docker-compose exec -T backend alembic upgrade head"
+```
+
+### GitLab CI/CD
+
+Create a `.gitlab-ci.yml` file:
+
+```yaml
+stages:
+  - test
+  - build
+  - deploy
+
+test:
+  stage: test
+  image: python:3.9
+  script:
+    - cd backend
+    - pip install -e .
+    - pytest
+
+build:
+  stage: build
+  image: docker:20.10.12
+  services:
+    - docker:20.10.12-dind
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker-compose build
+    - docker-compose push
+
+deploy:
+  stage: deploy
+  image: alpine:3.14
+  script:
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+    - ssh $SSH_USER@$SSH_HOST "cd $PROJECT_PATH && git pull && docker-compose -f docker-compose.yml -f docker-compose.traefik.yml up -d --build && docker-compose exec -T backend alembic upgrade head"
+  only:
+    - main
+```
+
+## Scaling
+
+### Horizontal Scaling
+
+For Docker Compose, you can scale services:
 
 ```bash
-docker compose -f docker-compose.traefik.yml up -d
+docker-compose up -d --scale backend=3
 ```
 
-## Deploy the FastAPI Project
-
-Now that you have Traefik in place you can deploy your FastAPI project with Docker Compose.
-
-**Note**: You might want to jump ahead to the section about Continuous Deployment with GitHub Actions.
-
-## Environment Variables
-
-You need to set some environment variables first.
-
-Set the `ENVIRONMENT`, by default `local` (for development), but when deploying to a server you would put something like `staging` or `production`:
+For Kubernetes, you can scale deployments:
 
 ```bash
-export ENVIRONMENT=production
+kubectl scale deployment backend -n kondition --replicas=3
 ```
 
-Set the `DOMAIN`, by default `localhost` (for development), but when deploying you would use your own domain, for example:
+### Vertical Scaling
 
+Increase resources in your Docker Compose file:
+
+```yaml
+services:
+  backend:
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+```
+
+For Kubernetes, update resource requests and limits:
+
+```yaml
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "1"
+```
+
+## Performance Optimization
+
+### Backend Optimization
+
+1. **Database Indexing**
+
+   Ensure proper indexes are created for frequently queried fields:
+
+   ```python
+   # In SQLModel models
+   class User(SQLModel, table=True):
+       id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+       email: str = Field(unique=True, index=True)  # Indexed field
+   ```
+
+2. **Caching**
+
+   Implement Redis caching:
+
+   ```yaml
+   # Add to docker-compose.yml
+   services:
+     redis:
+       image: redis:6.2
+       ports:
+         - "6379:6379"
+   ```
+
+3. **Async Operations**
+
+   FastAPI already uses async/await for better performance.
+
+### Frontend Optimization
+
+1. **Code Splitting**
+
+   Implement code splitting in the React Native app:
+
+   ```javascript
+   import { lazy, Suspense } from 'react';
+   
+   const HeavyComponent = lazy(() => import('./HeavyComponent'));
+   
+   function App() {
+     return (
+       <Suspense fallback={<LoadingIndicator />}>
+         <HeavyComponent />
+       </Suspense>
+     );
+   }
+   ```
+
+2. **Asset Optimization**
+
+   Optimize images and assets:
+
+   ```bash
+   # Install sharp-cli
+   npm install -g sharp-cli
+   
+   # Optimize images
+   sharp -i assets/images/* -o assets/optimized/
+   ```
+
+## Security Considerations
+
+### HTTPS
+
+Ensure all traffic is encrypted with HTTPS:
+
+- Configure Traefik or Nginx with SSL certificates
+- Set up automatic redirects from HTTP to HTTPS
+- Use HSTS headers
+
+### Environment Variables
+
+- Never commit sensitive environment variables to version control
+- Use a secure method to manage secrets (e.g., Docker secrets, Kubernetes secrets)
+- Rotate secrets regularly
+
+### Database Security
+
+- Use strong passwords
+- Limit database access to necessary services
+- Enable SSL for database connections
+- Regularly backup the database
+
+### API Security
+
+- Implement rate limiting
+- Use proper authentication and authorization
+- Validate all input data
+- Keep dependencies updated
+
+## Troubleshooting
+
+### Common Issues
+
+#### Docker Compose Issues
+
+**Issue**: Services not starting properly
+
+**Solution**:
 ```bash
-export DOMAIN=fastapi-project.example.com
+# Check logs
+docker-compose logs -f
+
+# Restart services
+docker-compose restart
+
+# Rebuild services
+docker-compose up -d --build
 ```
 
-You can set several variables, like:
+#### Database Connection Issues
 
-* `PROJECT_NAME`: The name of the project, used in the API for the docs and emails.
-* `STACK_NAME`: The name of the stack used for Docker Compose labels and project name, this should be different for `staging`, `production`, etc. You could use the same domain replacing dots with dashes, e.g. `fastapi-project-example-com` and `staging-fastapi-project-example-com`.
-* `BACKEND_CORS_ORIGINS`: A list of allowed CORS origins separated by commas.
-* `SECRET_KEY`: The secret key for the FastAPI project, used to sign tokens.
-* `FIRST_SUPERUSER`: The email of the first superuser, this superuser will be the one that can create new users.
-* `FIRST_SUPERUSER_PASSWORD`: The password of the first superuser.
-* `SMTP_HOST`: The SMTP server host to send emails, this would come from your email provider (E.g. Mailgun, Sparkpost, Sendgrid, etc).
-* `SMTP_USER`: The SMTP server user to send emails.
-* `SMTP_PASSWORD`: The SMTP server password to send emails.
-* `EMAILS_FROM_EMAIL`: The email account to send emails from.
-* `POSTGRES_SERVER`: The hostname of the PostgreSQL server. You can leave the default of `db`, provided by the same Docker Compose. You normally wouldn't need to change this unless you are using a third-party provider.
-* `POSTGRES_PORT`: The port of the PostgreSQL server. You can leave the default. You normally wouldn't need to change this unless you are using a third-party provider.
-* `POSTGRES_PASSWORD`: The Postgres password.
-* `POSTGRES_USER`: The Postgres user, you can leave the default.
-* `POSTGRES_DB`: The database name to use for this application. You can leave the default of `app`.
-* `SENTRY_DSN`: The DSN for Sentry, if you are using it.
+**Issue**: Backend can't connect to the database
 
-## GitHub Actions Environment Variables
-
-There are some environment variables only used by GitHub Actions that you can configure:
-
-* `LATEST_CHANGES`: Used by the GitHub Action [latest-changes](https://github.com/tiangolo/latest-changes) to automatically add release notes based on the PRs merged. It's a personal access token, read the docs for details.
-* `SMOKESHOW_AUTH_KEY`: Used to handle and publish the code coverage using [Smokeshow](https://github.com/samuelcolvin/smokeshow), follow their instructions to create a (free) Smokeshow key.
-
-### Generate secret keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
-
+**Solution**:
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
+# Check if PostgreSQL is running
+docker-compose ps
+
+# Check database logs
+docker-compose logs db
+
+# Verify connection settings in .env file
 ```
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
+#### SSL Certificate Issues
 
-### Deploy with Docker Compose
+**Issue**: SSL certificates not being issued or renewed
 
-With the environment variables in place, you can deploy with Docker Compose:
-
+**Solution**:
 ```bash
-docker compose -f docker-compose.yml up -d
+# Check Traefik logs
+docker-compose logs traefik
+
+# Verify DNS settings
+dig yourdomain.com
+
+# Check acme.json permissions
+chmod 600 traefik/acme.json
 ```
 
-For production you wouldn't want to have the overrides in `docker-compose.override.yml`, that's why we explicitly specify `docker-compose.yml` as the file to use.
+## Maintenance
 
-## Continuous Deployment (CD)
+### Regular Updates
 
-You can use GitHub Actions to deploy your project automatically. 😎
+1. **Update Dependencies**
 
-You can have multiple environment deployments.
+   ```bash
+   # Backend
+   pip install -U -e .
+   
+   # Frontend
+   npm update
+   ```
 
-There are already two environments configured, `staging` and `production`. 🚀
+2. **Update Docker Images**
 
-### Install GitHub Actions Runner
+   ```bash
+   docker-compose pull
+   docker-compose up -d
+   ```
 
-* On your remote server, create a user for your GitHub Actions:
+3. **Database Maintenance**
 
-```bash
-sudo adduser github
-```
+   ```bash
+   # Vacuum the database
+   docker-compose exec db psql -U postgres -d kondition -c "VACUUM ANALYZE;"
+   ```
 
-* Add Docker permissions to the `github` user:
+### Backup Strategy
 
-```bash
-sudo usermod -aG docker github
-```
+1. **Database Backups**
 
-* Temporarily switch to the `github` user:
+   Set up a cron job for regular backups:
 
-```bash
-sudo su - github
-```
+   ```bash
+   # Add to crontab
+   0 2 * * * /path/to/backup-script.sh
+   ```
 
-* Go to the `github` user's home directory:
+   Create a backup script:
 
-```bash
-cd
-```
+   ```bash
+   #!/bin/bash
+   # backup-script.sh
+   
+   BACKUP_DIR="/path/to/backups"
+   TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+   
+   # Create backup
+   docker-compose exec -T db pg_dump -U postgres kondition > "$BACKUP_DIR/kondition_$TIMESTAMP.sql"
+   
+   # Compress backup
+   gzip "$BACKUP_DIR/kondition_$TIMESTAMP.sql"
+   
+   # Remove backups older than 30 days
+   find "$BACKUP_DIR" -name "kondition_*.sql.gz" -mtime +30 -delete
+   ```
 
-* [Install a GitHub Action self-hosted runner following the official guide](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/adding-self-hosted-runners#adding-a-self-hosted-runner-to-a-repository).
+2. **File Backups**
 
-* When asked about labels, add a label for the environment, e.g. `production`. You can also add labels later.
+   Back up configuration files and user uploads:
 
-After installing, the guide would tell you to run a command to start the runner. Nevertheless, it would stop once you terminate that process or if your local connection to your server is lost.
+   ```bash
+   # Add to crontab
+   0 3 * * * tar -czf /path/to/backups/config_$(date +\%Y-\%m-\%d).tar.gz /path/to/config
+   ```
 
-To make sure it runs on startup and continues running, you can install it as a service. To do that, exit the `github` user and go back to the `root` user:
+## Disaster Recovery
 
-```bash
-exit
-```
+### Recovery Plan
 
-After you do it, you will be on the previous user again. And you will be on the previous directory, belonging to that user.
+1. **Server Failure**
 
-Before being able to go the `github` user directory, you need to become the `root` user (you might already be):
+   - Provision a new server
+   - Install Docker and Docker Compose
+   - Clone the repository
+   - Restore configuration files
+   - Restore the database from backup
+   - Start the services
 
-```bash
-sudo su
-```
+2. **Database Corruption**
 
-* As the `root` user, go to the `actions-runner` directory inside of the `github` user's home directory:
+   - Stop the services
+   - Restore the database from the latest backup
+   - Start the services
+   - Verify data integrity
 
-```bash
-cd /home/github/actions-runner
-```
+3. **Data Loss**
 
-* Install the self-hosted runner as a service with the user `github`:
+   - Identify the extent of data loss
+   - Restore from the most recent backup
+   - Implement additional safeguards to prevent future data loss
 
-```bash
-./svc.sh install github
-```
+## Resources
 
-* Start the service:
-
-```bash
-./svc.sh start
-```
-
-* Check the status of the service:
-
-```bash
-./svc.sh status
-```
-
-You can read more about it in the official guide: [Configuring the self-hosted runner application as a service](https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/configuring-the-self-hosted-runner-application-as-a-service).
-
-### Set Secrets
-
-On your repository, configure secrets for the environment variables you need, the same ones described above, including `SECRET_KEY`, etc. Follow the [official GitHub guide for setting repository secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
-
-The current Github Actions workflows expect these secrets:
-
-* `DOMAIN_PRODUCTION`
-* `DOMAIN_STAGING`
-* `STACK_NAME_PRODUCTION`
-* `STACK_NAME_STAGING`
-* `EMAILS_FROM_EMAIL`
-* `FIRST_SUPERUSER`
-* `FIRST_SUPERUSER_PASSWORD`
-* `POSTGRES_PASSWORD`
-* `SECRET_KEY`
-* `LATEST_CHANGES`
-* `SMOKESHOW_AUTH_KEY`
-
-## GitHub Action Deployment Workflows
-
-There are GitHub Action workflows in the `.github/workflows` directory already configured for deploying to the environments (GitHub Actions runners with the labels):
-
-* `staging`: after pushing (or merging) to the branch `master`.
-* `production`: after publishing a release.
-
-If you need to add extra environments you could use those as a starting point.
-
-## URLs
-
-Replace `fastapi-project.example.com` with your domain.
-
-### Main Traefik Dashboard
-
-Traefik UI: `https://traefik.fastapi-project.example.com`
-
-### Production
-
-Frontend: `https://dashboard.fastapi-project.example.com`
-
-Backend API docs: `https://api.fastapi-project.example.com/docs`
-
-Backend API base URL: `https://api.fastapi-project.example.com`
-
-Adminer: `https://adminer.fastapi-project.example.com`
-
-### Staging
-
-Frontend: `https://dashboard.staging.fastapi-project.example.com`
-
-Backend API docs: `https://api.staging.fastapi-project.example.com/docs`
-
-Backend API base URL: `https://api.staging.fastapi-project.example.com`
-
-Adminer: `https://adminer.staging.fastapi-project.example.com`
+- [Docker Documentation](https://docs.docker.com/)
+- [FastAPI Deployment Guide](https://fastapi.tiangolo.com/deployment/)
+- [Expo Deployment Guide](https://docs.expo.dev/distribution/introduction/)
+- [Traefik Documentation](https://doc.traefik.io/traefik/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)

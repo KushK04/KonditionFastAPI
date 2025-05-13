@@ -1,243 +1,243 @@
-# Full Stack FastAPI Template
+# Kondition - Fitness Motivator App
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3ATest" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test/badge.svg" alt="Test"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+## Project Overview
 
-## Technology Stack and Features
+Kondition is a fitness motivator application designed to help users maintain consistent workout routines, track progress, and stay motivated on their fitness journey. The app focuses on creating a seamless user experience with features like authentication, workout scheduling, progress tracking, and social engagement.
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-    - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-    - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
-    - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
-    - 🤖 An automatically generated frontend client.
-    - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-    - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+## Tech Stack
 
-### Dashboard Login
+### Frontend
+- **React Native/Expo**: Mobile app framework for cross-platform development
+- **Expo Router**: Navigation and routing
+- **React Navigation**: Tab-based navigation
+- **Styled Components**: UI theming and styling
+- **Expo Vector Icons**: Icon library
 
-[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Backend
+- **FastAPI**: High-performance Python web framework
+- **SQLModel**: SQL database ORM
+- **PostgreSQL**: Relational database
+- **Alembic**: Database migrations
+- **JWT**: Authentication tokens
+- **Docker**: Containerization
 
-### Dashboard - Admin
+### Infrastructure
+- **Firebase**: Authentication (alternative/future implementation)
+- **Sentry**: Error tracking and monitoring
 
-[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Architecture
 
-### Dashboard - Create User
+The project follows a modern client-server architecture:
 
-[![API docs](img/dashboard-create.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Frontend Architecture
+- **Expo-based React Native app** with a tab-based navigation structure
+- **Component-based design** with reusable UI elements
+- **Theme support** for light and dark modes
+- **Screen-based organization** with authentication flow
 
-### Dashboard - Items
+### Backend Architecture
+- **RESTful API** built with FastAPI
+- **Model-View-Controller (MVC)** pattern
+- **JWT-based authentication** with token refresh
+- **Database migrations** using Alembic
+- **Containerized deployment** with Docker
 
-[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Frontend Components
 
-### Dashboard - User Settings
+### Navigation Structure
+- **Root Layout**: Manages authentication state and main navigation
+- **Tab Navigation**: Home and Explore tabs
+- **Authentication Flow**: Login screen with email/password
 
-[![API docs](img/dashboard-user-settings.png)](https://github.com/fastapi/full-stack-fastapi-template)
+### Screens
+1. **Login Screen**: User authentication with email/password
+   - Form validation
+   - Remember me functionality
+   - Password visibility toggle
+   - Error handling
 
-### Dashboard - Dark Mode
+2. **Home Screen**: Main dashboard and entry point
+   - App introduction
+   - Call-to-action buttons
+   - Navigation to login
 
-[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
+3. **Explore Screen**: Feature showcase
+   - List of app features with icons
+   - Visual representation of app capabilities
 
-### Interactive API Documentation
+### UI Components
+- **ThemedText**: Text component with theme support
+- **ThemedView**: View component with theme support
+- **Button**: Customizable button with loading state
+- **Input**: Form input with validation and error display
+- **Checkbox**: Toggle component for boolean inputs
+- **IconSymbol**: Icon wrapper for consistent styling
+- **HapticTab**: Tab with haptic feedback
 
-[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Backend API
 
-## How To Use It
+### Authentication Endpoints
+- `POST /login/access-token`: Obtain JWT access token
+- `POST /login/test-token`: Validate token
+- `POST /password-recovery/{email}`: Initiate password recovery
+- `POST /reset-password/`: Reset password with token
 
-You can **just fork or clone** this repository and use it as is.
+### User Management Endpoints
+- `GET /users/`: List all users (admin only)
+- `POST /users/`: Create new user (admin only)
+- `GET /users/me`: Get current user profile
+- `PATCH /users/me`: Update current user profile
+- `PATCH /users/me/password`: Update current user password
+- `DELETE /users/me`: Delete current user account
+- `POST /users/signup`: Register new user
+- `GET /users/{user_id}`: Get user by ID
+- `PATCH /users/{user_id}`: Update user (admin only)
+- `DELETE /users/{user_id}`: Delete user (admin only)
 
-✨ It just works. ✨
+### Data Models
+- **User**: User account information
+- **Token**: Authentication token
+- **Item**: Generic item model (for future feature implementation)
 
-### How to Use a Private Repository
+## Authentication Flow
 
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
+1. **Registration**: Users can sign up with email and password
+2. **Login**: Users authenticate with credentials to receive JWT token
+3. **Token Usage**: JWT token is included in API requests for authorization
+4. **Password Recovery**: Email-based password reset flow
+5. **Profile Management**: Users can update profile information and change passwords
 
-But you can do the following:
+## Development Setup
 
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
+### Prerequisites
+- Node.js and npm/yarn
+- Python 3.9+
+- Docker and Docker Compose
+- Expo CLI
 
+### Frontend Setup
 ```bash
-git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
+# Navigate to the Expo app directory
+cd PROJECT/KonditionFastAPI/KonditionExpo
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm start
 ```
 
-- Enter into the new directory:
-
+### Backend Setup
 ```bash
-cd my-full-stack
+# Navigate to the backend directory
+cd PROJECT/KonditionFastAPI/backend
+
+# Set up a virtual environment (optional but recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -e .
+
+# Run migrations
+alembic upgrade head
+
+# Start the development server
+uvicorn app.main:app --reload
 ```
 
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
-
+### Docker Setup
 ```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
+# From the project root
+cd PROJECT/KonditionFastAPI
+
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
 ```
 
-- Add this repo as another "remote" to allow you to get updates later:
+## Project Roadmap
 
-```bash
-git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
-```
+The project follows a phased implementation approach based on MoSCoW prioritization:
 
-- Push the code to your new repository:
+### Must Haves (Phase 1)
+- User Registration & Login
+- Set Workout Schedule
+- Push Notifications
+- Log Workouts
 
-```bash
-git push -u origin master
-```
+### Should Haves (Phase 2)
+- Progress Dashboard
+- Profile & Goals
+- Edit & Manage Schedule
+- Basic Workout Library
 
-### Update From the Original Template
+### Could Haves (Phase 3)
+- Social Features / Leaderboard
+- Motivational Tips & Quotes
+- Goal Reminders & Achievement Badges
+- Google/Apple Single Sign-On
+- Social Media Sharing
 
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
+### Won't Have (Future Consideration)
+- AI-Powered Personalized Workouts
+- Nutritional Tracking
 
-- Make sure you added the original repository as a remote, you can check it with:
+## Sprint Planning
 
-```bash
-git remote -v
+### Sprint 1: Foundation
+- Authentication & User Accounts
+- Basic UI/UX Implementation
+- Project Structure Setup
 
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
-```
+### Sprint 2: Core Functionality
+- Scheduling & Notifications
+- Workout Logging
+- Basic Progress Tracking
 
-- Pull the latest changes without merging:
+### Sprint 3: Enhanced Features
+- Motivational Content
+- Goals & Achievements
+- Profile Customization
 
-```bash
-git pull --no-commit upstream master
-```
+### Sprint 4: Social & Engagement
+- Social Features (if included)
+- Challenges/Leaderboards
+- Final Polishing
 
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
+## Contributing
 
-- If there are conflicts, solve them in your editor.
+### Development Workflow
+1. Create feature branches from main
+2. Implement changes with appropriate tests
+3. Submit pull requests for review
+4. Merge approved PRs to main
 
-- Once you are done, commit the changes:
-
-```bash
-git merge --continue
-```
-
-### Configure
-
-You can then update configs in the `.env` files to customize your configurations.
-
-Before deploying it, make sure you change at least the values for:
-
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
-
-You can (and should) pass these as environment variables from secrets.
-
-Read the [deployment.md](./deployment.md) docs for more details.
-
-### Generate Secret Keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
-
-## How To Use It - Alternative With Copier
-
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
-
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
-
-### Install Copier
-
-You can install Copier with:
-
-```bash
-pip install copier
-```
-
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
-
-```bash
-pipx install copier
-```
-
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
-
-### Generate a Project With Copier
-
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
-
-Go to the directory that will be the parent of your project, and run the command with your project's name:
-
-```bash
-copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-If you have `pipx` and you didn't install `copier`, you can run it directly:
-
-```bash
-pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
-
-### Input Variables
-
-Copier will ask you for some data, you might want to have at hand before generating the project.
-
-But don't worry, you can just update any of that in the `.env` files afterwards.
-
-The input variables, with their default values (some auto generated) are:
-
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
-- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
-- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
+### Code Standards
+- Follow TypeScript/Python best practices
+- Write unit tests for new features
+- Document API endpoints and components
 
 ## Deployment
 
-Deployment docs: [deployment.md](./deployment.md).
+### Production Deployment
+The application can be deployed using Docker:
 
-## Development
+```bash
+# Build and deploy
+docker-compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
+```
 
-General development docs: [development.md](./development.md).
+### Environment Configuration
+- Configure environment variables for production settings
+- Set up proper CORS settings for production domains
+- Enable Sentry for error tracking in production
 
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
+## Resources
 
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
-
-## License
-
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
-
-
-## git push test
--test
+- [Expo Documentation](https://docs.expo.dev/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [React Native Documentation](https://reactnative.dev/docs/getting-started)
+- [SQLModel Documentation](https://sqlmodel.tiangolo.com/)
