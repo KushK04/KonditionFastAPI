@@ -3,8 +3,18 @@ import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, KeyboardAv
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { router } from 'expo-router';
+<<<<<<< HEAD
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '../hooks/useThemeColor';
+=======
+import { useUser } from '@/contexts/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from "@/constants/config";
+
+
+
+
+>>>>>>> Kush-Test
 
 export default function SignUpScreen() {
   const { signup, isLoading, isAuthenticated } = useAuth();
@@ -54,6 +64,7 @@ export default function SignUpScreen() {
       newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
 
+<<<<<<< HEAD
     // Confirm password validation
     if (!confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
@@ -94,6 +105,47 @@ export default function SignUpScreen() {
 
   const handleSignIn = () => {
     router.push('/login');
+=======
+  const handleCreateAccount = async () => {
+    if (password !== confirmPassword) {
+      alert("Passwords don't match");
+      return;
+    }
+  
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+      });
+      console.log("response from signup: ", res);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.log("ERROR DATA: ", errData);
+        const errMsg =
+          errData.detail || JSON.stringify(errData) || res.statusText || "Unknown error";
+        alert("Signup failed: " + errMsg);
+        return;
+      }      
+      const data = await res.json();
+      console.log("JSON DATA OF SIGNUP: ", data)
+      if (res.ok) {
+        // Optionally, auto-login after signup
+        if (data.access_token) {
+          await AsyncStorage.setItem("access_token", data.access_token);
+        } else {
+          console.warn("No token returned from signup");
+        }
+        setUserName(name);
+        router.replace('/signup2');
+      } else {
+        alert(data.detail || "Signup failed");
+      }
+    } catch (err) {
+      console.error("Signup error", err);
+      alert("Something went wrong during signup.");
+    }
+>>>>>>> Kush-Test
   };
 
   return (
