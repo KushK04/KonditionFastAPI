@@ -3,7 +3,9 @@ from app.core.engine import engine
 from app import crud
 from app.core.config import settings
 from app.models import User, UserCreate
+from sqlmodel import SQLModel
 
+Base = SQLModel
 # make sure all SQLModel models are imported (app.models) before initializing DB
 # otherwise, SQLModel might fail to initialize relationships properly
 # for more details: https://github.com/fastapi/full-stack-fastapi-template/issues/28
