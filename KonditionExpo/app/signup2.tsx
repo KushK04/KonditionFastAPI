@@ -15,6 +15,9 @@ import { Button } from '@/components/ui/Button';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '../hooks/useThemeColor';
+import { useUser } from '@/contexts/UserContext';
+import { TouchableWithoutFeedback, Keyboard } from 'react-native';
+
 
 export default function SignUpStep2() {
   const { updateProfile, isLoading, isAuthenticated, user, setSignupFlowComplete } = useAuth();
@@ -450,6 +453,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
   },
+  pickerContainer: {
+    height: 48,
+    justifyContent: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#555',
+    borderRadius: 6,
+    backgroundColor: '#1a1a1a',
+  },
 });
 
 const pickerSelectStyles = {
@@ -464,6 +476,8 @@ const pickerSelectStyles = {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingRight: 30,
     marginBottom: 8,
+    flex: 1,
+    justifyContent: 'center',
   },
   inputAndroid: {
     fontSize: 16,
@@ -476,6 +490,7 @@ const pickerSelectStyles = {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingRight: 30,
     marginBottom: 8,
+    justifyContent: 'center',
   },
 };
 
@@ -492,6 +507,8 @@ const pickerSelectStylesSmall = {
     paddingRight: 30,
     marginLeft: 10,
     minWidth: 80,
+    minHeight: 44,
+    justifyContent: 'center'
   },
   inputAndroid: {
     fontSize: 16,
@@ -505,5 +522,7 @@ const pickerSelectStylesSmall = {
     paddingRight: 30,
     marginLeft: 10,
     minWidth: 80,
+    minHeight: 44,
+    justifyContent: 'center',
   },
 };

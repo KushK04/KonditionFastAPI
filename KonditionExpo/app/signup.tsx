@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/Button';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '../hooks/useThemeColor';
+import { useUser } from '@/contexts/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from "@/constants/config";
+
+
+
+
 
 export default function SignUpScreen() {
   const { signup, isLoading, isAuthenticated } = useAuth();
