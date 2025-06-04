@@ -13,14 +13,11 @@ import {
 import RNPickerSelect from 'react-native-picker-select';
 import { Button } from '@/components/ui/Button';
 import { router } from 'expo-router';
-<<<<<<< HEAD
 import { useAuth } from '@/contexts/AuthContext';
 import { useThemeColor } from '../hooks/useThemeColor';
-=======
 import { useUser } from '@/contexts/UserContext';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
->>>>>>> Kush-Test
 
 export default function SignUpStep2() {
   const { updateProfile, isLoading, isAuthenticated, user, setSignupFlowComplete } = useAuth();
@@ -208,7 +205,6 @@ export default function SignUpStep2() {
 
   return (
     <KeyboardAvoidingView
-<<<<<<< HEAD
       style={[styles.container, { backgroundColor }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
@@ -224,22 +220,6 @@ export default function SignUpStep2() {
           <Text style={[styles.label, { color: textColor }]}>Gender</Text>
           <RNPickerSelect
             onValueChange={setGender}
-=======
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={64}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled" style={{ flex: 1, overflow: 'visible' }}>
-          <Text style={styles.title}>Additional Info</Text>
-
-          <Text style={styles.label}>Gender</Text>
-          <View style={styles.pickerContainer}>
-          <RNPickerSelect
-            onValueChange={(val) => {
-              setGender(val);
-            }}
->>>>>>> Kush-Test
             value={gender}
             placeholder={{ label: 'Select Gender...', value: '' }}
             items={[
@@ -249,7 +229,6 @@ export default function SignUpStep2() {
               { label: 'Other', value: 'other' },
             ]}
             style={pickerSelectStyles}
-<<<<<<< HEAD
           />
           {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
 
@@ -259,66 +238,34 @@ export default function SignUpStep2() {
           <View style={styles.dobRow}>
             <TextInput
               style={[styles.dobInput, styles.dobPart, { color: textColor }]}
-=======
-            useNativeAndroidPickerStyle={false}
-            onOpen={() => Keyboard.dismiss}
-          /></View>
-
-          <Text style={styles.label}>Date of Birth</Text>
-          <Text style={styles.subLabel}>MM / DD / YYYY</Text>
-          <View style={styles.dobRow}>
-            <TextInput
-              style={[styles.dobInput, styles.dobPart]}
->>>>>>> Kush-Test
               value={dobMM}
               onChangeText={onChangeDobMM}
               keyboardType="numeric"
               maxLength={2}
               placeholder="MM"
               placeholderTextColor="#aaa"
-<<<<<<< HEAD
             />
             <Text style={[styles.slash, { color: textColor }]}>/</Text>
             <TextInput
               ref={ddRef}
               style={[styles.dobInput, styles.dobPart, { color: textColor }]}
-=======
-              returnKeyType="done"
-              blurOnSubmit={true}
-            />
-            <Text style={styles.slash}>/</Text>
-            <TextInput
-              ref={ddRef}
-              style={[styles.dobInput, styles.dobPart]}
->>>>>>> Kush-Test
               value={dobDD}
               onChangeText={onChangeDobDD}
               keyboardType="numeric"
               maxLength={2}
               placeholder="DD"
               placeholderTextColor="#aaa"
-<<<<<<< HEAD
             />
             <Text style={[styles.slash, { color: textColor }]}>/</Text>
             <TextInput
               ref={yyyyRef}
               style={[styles.dobInput, styles.dobYear, { color: textColor }]}
-=======
-              returnKeyType="done"
-              blurOnSubmit={true}
-            />
-            <Text style={styles.slash}>/</Text>
-            <TextInput
-              ref={yyyyRef}
-              style={[styles.dobInput, styles.dobYear]}
->>>>>>> Kush-Test
               value={dobYYYY}
               onChangeText={onChangeDobYYYY}
               keyboardType="numeric"
               maxLength={4}
               placeholder="YYYY"
               placeholderTextColor="#aaa"
-<<<<<<< HEAD
             />
           </View>
           {errors.dateOfBirth && <Text style={styles.errorText}>{errors.dateOfBirth}</Text>}
@@ -416,100 +363,6 @@ export default function SignUpStep2() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
-=======
-              returnKeyType="done"
-              blurOnSubmit={true}
-            />
-          </View>
-
-          <Text style={styles.label}>Weight</Text>
-          <View style={styles.row}>
-            <TextInput
-              style={styles.textInput}
-              value={weight}
-              onChangeText={(text) => updateWeight(text.replace(/[^0-9]/g, ''))}
-              keyboardType="numeric"
-              placeholder="Enter weight"
-              placeholderTextColor="#aaa"
-              returnKeyType="done"
-              blurOnSubmit={true}
-            />
-            <View style={styles.pickerContainer}>
-            <RNPickerSelect
-              onValueChange={setWeightUnit}
-              value={weightUnit}
-              items={[
-                { label: 'lbs', value: 'lbs' },
-                { label: 'kg', value: 'kg' },
-              ]}
-              style={pickerSelectStylesSmall}
-              useNativeAndroidPickerStyle={false}
-              onOpen={() => Keyboard.dismiss()}
-            /></View>
-          </View>
-
-          <Text style={styles.label}>Height</Text>
-          <View style={styles.row}>
-            {heightUnit === 'ft/in' ? (
-              <>
-                <TextInput
-                  style={styles.textInput}
-                  value={heightFeet}
-                  onChangeText={(text) => setHeightFeet(text.replace(/[^0-9]/g, ''))}
-                  keyboardType="numeric"
-                  placeholder="Feet"
-                  placeholderTextColor="#aaa"
-                  returnKeyType="done"
-                  blurOnSubmit={true}
-                />
-                <TextInput
-                  style={[styles.textInput, { marginLeft: 10 }]}
-                  value={heightInches}
-                  onChangeText={(text) => setHeightInches(text.replace(/[^0-9]/g, ''))}
-                  keyboardType="numeric"
-                  placeholder="Inches"
-                  placeholderTextColor="#aaa"
-                  returnKeyType="done"
-                  blurOnSubmit={true}
-                />
-              </>
-            ) : (
-              <TextInput
-                style={styles.textInput}
-                value={height}
-                onChangeText={(text) => updateHeight(text.replace(/[^0-9]/g, ''))}
-                keyboardType="numeric"
-                placeholder="Height in cm"
-                placeholderTextColor="#aaa"
-                returnKeyType="done"
-                blurOnSubmit={true}
-              />
-            )}
-            <View style={styles.pickerContainer}>
-            <RNPickerSelect
-              onValueChange={(val) => {
-                setHeightUnit(val);
-                updateHeight('');
-                setHeightFeet('');
-                setHeightInches('');
-              }}
-              value={heightUnit}
-              items={[
-                { label: 'ft/in', value: 'ft/in' },
-                { label: 'cm', value: 'cm' },
-              ]}
-              style={pickerSelectStylesSmall}
-              useNativeAndroidPickerStyle={false}
-              onOpen={() => Keyboard.dismiss()}
-            /></View>
-          </View>
-
-          <Button title="Next" onPress={handleNext} fullWidth style={{ marginTop: 30 }} />
-        </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-
->>>>>>> Kush-Test
   );
 }
 
