@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-=======
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
->>>>>>> Kush-Test
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiService, UserProfile, SignupRequest, ProfileUpdateRequest } from '../services/api';
 

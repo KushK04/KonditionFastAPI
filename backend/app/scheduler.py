@@ -8,7 +8,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from sqlmodel import Session, select
 from app.core.db import engine            # your SQLModel engine from db.py
-from app.crudFuncs import (
+from app.crud import (
     get_due_custom_reminders,
     mark_reminder_as_sent
 )

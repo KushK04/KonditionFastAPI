@@ -5,13 +5,9 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Checkbox } from '../components/ui/Checkbox';
 import { router } from 'expo-router';
-<<<<<<< HEAD
 import { useAuth } from '@/contexts/AuthContext';
-=======
 import { useUser } from '@/contexts/UserContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { API_URL } from '@/constants/config';
->>>>>>> Kush-Test
 
 export default function LoginScreen() {
   const { login, isLoading, isAuthenticated } = useAuth();
@@ -20,22 +16,20 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const { login } = useAuth();
 
   
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const tintColor = useThemeColor({}, 'tint');
 
-  // Redirect if already authenticated
-  useEffect(() => {
+  // Redirect if already authenticated ---- Doesnt work so commented
+  /*useEffect(() => {
     if (isAuthenticated) {
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated]);*/
   
   const handleLogin = async () => {
-<<<<<<< HEAD
     setErrors({});
     
     const newErrors: { email?: string; password?: string } = {};
@@ -61,24 +55,6 @@ export default function LoginScreen() {
         error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         [{ text: 'OK' }]
       );
-=======
-    try {
-      setIsLoading(true);
-      await login(email, password); // Use context login logic
-      setUserName(email); // optionally call setUserName if it's useful
-      router.replace('/'); // Redirect to home or dashboard
-    } catch (err: any) {
-      console.error('Login error:', err instanceof Error ? err.message : err);
-      if (err instanceof Error) {
-        console.error('Login error:', err.message);
-        console.error('Full stack:', err.stack);
-      } else {
-        console.error('Login error (raw):', err);
-      }
-      alert(`Login failed: ${err.message}`);
-    } finally {
-      setIsLoading(false);
->>>>>>> Kush-Test
     }
   };
   

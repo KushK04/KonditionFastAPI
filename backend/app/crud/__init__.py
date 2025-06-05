@@ -39,6 +39,16 @@ from app.crud.workouts import (
     create_or_update_personal_best
 )
 
+from app.crud.reminder import (
+    schedule_custom_reminder,
+    get_due_custom_reminders,
+    mark_reminder_as_sent
+)
+
+from app.crud.token import (
+    create_or_update_push_token
+)
+
 __all__ = [
     # User operations
     "authenticate",
@@ -77,4 +87,11 @@ __all__ = [
     "get_personal_best",
     "get_personal_bests",
     "create_or_update_personal_best"
+
+    #Reminders
+    "schedule_custom_reminder",
+    "get_due_custom_reminders",
+    "mark_reminder_as_sent",
+
+    "create_or_update_push_token",
 ]
