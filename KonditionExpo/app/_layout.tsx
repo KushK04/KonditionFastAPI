@@ -146,6 +146,7 @@ export default function RootLayout() {
                     <Stack.Screen name="notification" options={{ headerShown: false }} />
                     <Stack.Screen name="profile" options={{ headerShown: false }} />
                     <Stack.Screen name="create-post" options={{ headerShown: false }} />
+                    <Stack.Screen name="edit-post" options={{ headerShown: false }} />
                     <Stack.Screen name="+not-found" />
                   </Stack>
                 </ProtectedRoute>

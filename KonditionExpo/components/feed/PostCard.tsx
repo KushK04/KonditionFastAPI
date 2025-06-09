@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { router } from 'expo-router';
 import { WorkoutPostResponse } from '../../services/api';
 import { useFeed } from '../../contexts/FeedContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,9 +12,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, onPress }: PostCardProps) {
-  const { deletePost } = useFeed();
   const { user } = useAuth();
-  const [isDeleting, setIsDeleting] = useState(false);
   
   const isOwnPost = user?.id === post.user_id;
   
@@ -56,84 +55,20 @@ export function PostCard({ post, onPress }: PostCardProps) {
     return date.toLocaleDateString();
   };
 
-  const handleDelete = async () => {
-    console.log('Delete button pressed for post:', post.id, 'by user:', user?.id);
-    
-    if (isDeleting) {
-      console.log('Delete already in progress, ignoring click');
-      return; // Prevent multiple delete attempts
-    }
-    
-    console.log('Showing delete confirmation dialog');
-    
-    // Use web-compatible confirmation for web platform
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm('Are you sure you want to delete this post?');
-      if (!confirmed) {
-        console.log('User cancelled delete');
-        return;
+  const handleEdit = () => {
+    // Navigate to edit-post screen with post data
+    router.push({
+      pathname: '/edit-post',
+      params: {
+        postId: post.id.toString(),
+        title: post.title,
+        description: post.description || '',
+        workout_type: post.workout_type,
+        duration_minutes: post.duration_minutes.toString(),
+        calories_burned: post.calories_burned?.toString() || '',
+        is_public: post.is_public.toString(),
       }
-    } else {
-      // Use Alert.alert for native platforms
-      return new Promise((resolve) => {
-        Alert.alert(
-          'Delete Post',
-          'Are you sure you want to delete this post?',
-          [
-            {
-              text: 'Cancel',
-              style: 'cancel',
-              onPress: () => {
-                console.log('User cancelled delete');
-                resolve(false);
-              }
-            },
-            {
-              text: 'Delete',
-              style: 'destructive',
-              onPress: () => {
-                console.log('User confirmed delete via Alert');
-                resolve(true);
-              },
-            },
-          ]
-        );
-      }).then((confirmed) => {
-        if (!confirmed) return;
-        return performDelete();
-      });
-    }
-    
-    // For web, proceed directly after confirmation
-    console.log('User confirmed delete, starting deletion process...');
-    await performDelete();
-  };
-
-  const performDelete = async () => {
-    try {
-      setIsDeleting(true);
-      console.log('Calling deletePost with ID:', post.id);
-      await deletePost(post.id);
-      console.log('Delete post successful');
-      // Success feedback is handled by optimistic update in FeedContext
-    } catch (error) {
-      console.error('Delete post error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete post';
-      console.log('Showing error alert:', errorMessage);
-      
-      if (Platform.OS === 'web') {
-        window.alert(`Delete Failed: ${errorMessage}`);
-      } else {
-        Alert.alert(
-          'Delete Failed',
-          errorMessage,
-          [{ text: 'OK', style: 'default' }]
-        );
-      }
-    } finally {
-      console.log('Delete process completed, resetting isDeleting state');
-      setIsDeleting(false);
-    }
+    });
   };
 
   return (
@@ -161,20 +96,15 @@ export function PostCard({ post, onPress }: PostCardProps) {
             </View>
           </View>
         </View>
-        {/* Only show delete button for user's own posts */}
+        {/* Only show edit link for user's own posts */}
         {isOwnPost && (
           <TouchableOpacity
-            onPress={handleDelete}
-            style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
-            disabled={isDeleting}
-            activeOpacity={0.8}
+            onPress={handleEdit}
+            style={styles.editLink}
+            activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            {isDeleting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <IconSymbol name="trash" size={18} color="#FFFFFF" />
-            )}
+            <Text style={styles.editText}>Edit</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -290,26 +220,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginLeft: 4,
   },
-  deleteButton: {
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#FF3B30',
-    borderWidth: 2,
-    borderColor: '#FF1F1F',
-    minWidth: 40,
-    minHeight: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#FF3B30',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+  editLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
-  deleteButtonDisabled: {
-    opacity: 0.6,
-    backgroundColor: '#FF8A80',
-    borderColor: '#FF8A80',
+  editText: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '500',
+    textDecorationLine: 'underline',
   },
   content: {
     marginBottom: 12,
