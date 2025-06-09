@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { apiService, WorkoutPostResponse, WorkoutPostsResponse, WorkoutPostCreateRequest } from '../services/api';
+import { apiService, WorkoutPostResponse, WorkoutPostsResponse, WorkoutPostCreateRequest, WorkoutPostUpdateRequest } from '../services/api';
 
 export type FeedType = 'personal' | 'public' | 'combined';
 
@@ -22,6 +22,7 @@ interface FeedContextType extends FeedState {
   
   // Post operations
   createPost: (postData: WorkoutPostCreateRequest) => Promise<void>;
+  updatePost: (postId: string, postData: WorkoutPostUpdateRequest) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
   
   // Utility functions
@@ -166,13 +167,84 @@ export function FeedProvider({ children }: FeedProviderProps) {
     }
   }, []);
 
+  const updatePost = useCallback(async (postId: string, postData: WorkoutPostUpdateRequest) => {
+    // Store the original post data for potential restoration
+    let originalPost: WorkoutPostResponse | null = null;
+    let previousState: FeedState | null = null;
+
+    try {
+      setError(null);
+
+      // Store current state and find the post to update
+      setState(prev => {
+        previousState = { ...prev };
+        originalPost = prev.personalFeed.find(post => post.id === postId) ||
+                      prev.publicFeed.find(post => post.id === postId) ||
+                      prev.combinedFeed.find(post => post.id === postId) ||
+                      null;
+
+        if (!originalPost) {
+          return prev; // Post not found, no optimistic update
+        }
+
+        // Create optimistically updated post
+        const updatedPost: WorkoutPostResponse = {
+          ...originalPost,
+          ...postData,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Optimistic update: Update the post immediately in all relevant feeds
+        const updatePostInFeed = (feed: WorkoutPostResponse[]) =>
+          feed.map(post => post.id === postId ? updatedPost : post);
+
+        return {
+          ...prev,
+          personalFeed: updatePostInFeed(prev.personalFeed),
+          publicFeed: updatePostInFeed(prev.publicFeed),
+          combinedFeed: updatePostInFeed(prev.combinedFeed),
+        };
+      });
+
+      // Attempt to update the post on the server
+      const serverUpdatedPost = await apiService.updateWorkoutPost(postId, postData);
+      
+      // Success - update with server response to ensure consistency
+      setState(prev => {
+        const updatePostInFeed = (feed: WorkoutPostResponse[]) =>
+          feed.map(post => post.id === postId ? serverUpdatedPost : post);
+
+        return {
+          ...prev,
+          personalFeed: updatePostInFeed(prev.personalFeed),
+          publicFeed: updatePostInFeed(prev.publicFeed),
+          combinedFeed: updatePostInFeed(prev.combinedFeed),
+        };
+      });
+      
+    } catch (error) {
+      console.error('Error updating post:', error);
+      
+      // Restore the post to its previous state if update failed
+      if (previousState) {
+        setState(previousState);
+      }
+      
+      setError(error instanceof Error ? error.message : 'Failed to update post');
+      throw error;
+    }
+  }, []);
+
   const deletePost = useCallback(async (postId: string) => {
+    console.log('FeedContext deletePost called with postId:', postId);
+    
     // Store the post data for potential restoration
     let deletedPost: WorkoutPostResponse | null = null;
     let previousState: FeedState | null = null;
 
     try {
       setError(null);
+      console.log('Starting delete process...');
 
       // Store current state and find the post to delete
       setState(prev => {
@@ -182,17 +254,30 @@ export function FeedProvider({ children }: FeedProviderProps) {
                      prev.combinedFeed.find(post => post.id === postId) ||
                      null;
 
+        console.log('Found post to delete:', deletedPost);
+        console.log('Personal feed length before:', prev.personalFeed.length);
+        console.log('Public feed length before:', prev.publicFeed.length);
+        console.log('Combined feed length before:', prev.combinedFeed.length);
+
         // Optimistic update: Remove the post immediately from all feeds
-        return {
+        const newState = {
           ...prev,
           personalFeed: prev.personalFeed.filter(post => post.id !== postId),
           publicFeed: prev.publicFeed.filter(post => post.id !== postId),
           combinedFeed: prev.combinedFeed.filter(post => post.id !== postId),
         };
+
+        console.log('Personal feed length after:', newState.personalFeed.length);
+        console.log('Public feed length after:', newState.publicFeed.length);
+        console.log('Combined feed length after:', newState.combinedFeed.length);
+
+        return newState;
       });
 
+      console.log('Making API call to delete post...');
       // Attempt to delete the post on the server
       await apiService.deleteWorkoutPost(postId);
+      console.log('API call successful - post deleted');
       
       // Success - the optimistic update stands
     } catch (error) {
@@ -200,6 +285,7 @@ export function FeedProvider({ children }: FeedProviderProps) {
       
       // Restore the post to its previous position if deletion failed
       if (previousState && deletedPost) {
+        console.log('Restoring previous state due to error');
         setState(previousState);
       }
       
@@ -215,6 +301,7 @@ export function FeedProvider({ children }: FeedProviderProps) {
     refreshFeed,
     setCurrentFeedType,
     createPost,
+    updatePost,
     deletePost,
     getCurrentFeed,
     clearError,
