@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
+
 import { 
   SafeAreaView, 
   View, 
@@ -17,35 +19,46 @@ import { Input } from '@/components/ui/Input';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 const { width } = Dimensions.get('window');
-
+const formatDate = (date: Date) => {
+  return format(new Date(date), 'MMM d, yyyy'); // e.g. Jun 9, 2025
+};
 interface WorkoutItemProps {
   workout: Workout;
   onPress: () => void;
 }
 
 const WorkoutItem = ({ workout, onPress }: WorkoutItemProps) => {
-  const { workouts, currentWorkout, exerSets, exerReps, exerWeights, startWorkout, getWorkouts, getExercises, getExercises_2} = useWorkout();
+  const { getExercises } = useWorkout();
+  const [stats, setStats] = useState({ sets: 0, reps: 0, weight: 0 });
+  const { token, isAuthenticated, isLoading } = useAuth(); //token of user
+
+  useEffect(() => {
+    const loadStats = async () => {
+      await getExercises(workout.id); // this updates global `exercises`, which we can't reliably read here
+      const res = await fetch(`http://localhost:8000/api/v1/workouts/${workout.id}/exercises`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const json = await res.json();
+      //console.log(json);
+      let sets = 0, reps = 0, weight = 0;
+      for (const ex of json) {
+        sets += ex.sets ?? 0;
+        reps += ex.reps ?? 0;
+        weight += ex.weight ?? 0;
+      }
+
+      setStats({ sets, reps, weight });
+    };
+
+    loadStats();
+  }, [workout.id]);
+
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric' 
-    });
+    return format(new Date(date), 'MMM d, yyyy');
   };
-
-  //getWorkouts();
-  //console.log(workout.id);
-
-  //getExercises(workout.id); // Set the exercises
-  //console.log(getExercises_2()); // Get the exercises
-
-  //const exercises = getExercises_2();
-
-  //for (const exercise of exercises) {
-  //  exerSets += exercise.sets || 0;
-  //  exerReps += exercise.reps || 0;
-  //  exerWeight += exercise.weight || 0;
-  //}
 
   return (
     <TouchableOpacity style={styles.workoutItem} onPress={onPress}>
@@ -54,9 +67,9 @@ const WorkoutItem = ({ workout, onPress }: WorkoutItemProps) => {
         <Text style={styles.workoutDate}>{formatDate(workout.date)}</Text>
       </View>
       <View style={styles.workoutStats}>
-        <Text style={styles.workoutStat}>{exerSets} sets</Text>
-        <Text style={styles.workoutStat}>{exerReps} reps</Text>
-        <Text style={styles.workoutStat}>{exerWeights} weights</Text>
+        <Text style={styles.workoutStat}>{stats.sets} sets</Text>
+        <Text style={styles.workoutStat}>{stats.reps} reps</Text>
+        <Text style={styles.workoutStat}>{stats.weight} weights</Text>
       </View>
     </TouchableOpacity>
   );
@@ -65,7 +78,7 @@ const WorkoutItem = ({ workout, onPress }: WorkoutItemProps) => {
 
 
 const ProgressScreen = () => {
-  const { workouts, currentWorkout, startWorkout, getWorkouts, getExercises} = useWorkout();
+  const { workouts, currentWorkout, startWorkout, getWorkouts, getExercises, completeWorkout} = useWorkout();
   const { isAuthenticated, isLoading } = useAuth();
   const [showNewWorkoutModal, setShowNewWorkoutModal] = useState(false);
   const [newWorkoutName, setNewWorkoutName] = useState('');
@@ -132,10 +145,25 @@ const ProgressScreen = () => {
   };
 
   const getAverageWorkoutDuration = () => {
-    if (workouts.length === 0) return 0;
-    const total = workouts.reduce((sum, w) => sum + w.duration, 0);
-    return Math.round(total / workouts.length);
+    const completed = workouts.filter(w => w.is_completed && (w.updated_at || w.completed_date));
+  
+    if (completed.length === 0) return 0;
+  
+    const totalMinutes = completed.reduce((sum, w) => {
+      const start = new Date(w.created_at).getTime();
+      const end = new Date(w.updated_at ?? w.completed_date).getTime();
+      const duration = Math.round((end - start) / 60000); // in minutes
+      return sum + duration;
+    }, 0);
+  
+    return Math.round(totalMinutes / completed.length);
   };
+  
+
+  const unfinishedCount = useMemo(
+    () => workouts.filter(w => !w.is_completed).length,
+    [workouts]
+  );
 
   const weeklyData = getWeeklyWorkouts();
   const weeklyLabels = getWeeklyLabels();
@@ -178,7 +206,7 @@ const ProgressScreen = () => {
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{getAverageWorkoutDuration()}</Text>
-            <Text style={styles.statLabel}>Avg Duration</Text>
+            <Text style={styles.statLabel}>Avg Mins Per Workout</Text>
           </View>
         </View>
 
@@ -225,16 +253,15 @@ const ProgressScreen = () => {
           />
         </View>
 
-        {/*Finish Old Workout Button*/}
         <View style={styles.actionContainer}>
-        <Button
-          title="Finish Old Workout"
-          onPress={() => setShowFinishModal(true)}
-          size="lg"
-          fullWidth
-          style={{ backgroundColor: '#FFA07A' }}
-        />
-        </View>        
+  <Button
+    title={`Finish Old Workout (${unfinishedCount})`}
+    onPress={() => setShowFinishModal(true)}
+    size="lg"
+    fullWidth
+    style={{ backgroundColor: '#FFA07A' }}
+  />
+</View>      
 
         {/* Recent Workouts */}
         <View style={styles.workoutHistoryContainer}>
@@ -301,57 +328,65 @@ const ProgressScreen = () => {
         </View>
       </Modal>
 
-      {/* Finish Workout Modal*/}
-      <Modal
-      visible={showFinishModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowFinishModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { backgroundColor }]}>
-          <Text style={[styles.modalTitle, { color: textColor }]}>
-            Unfinished Workouts
+{/* Finish Workout Modal */}
+<Modal
+  visible={showFinishModal}
+  transparent
+  animationType="slide"
+  onRequestClose={() => setShowFinishModal(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={[styles.modalContent, { backgroundColor }]}>
+      <Text style={[styles.modalTitle, { color: textColor }]}>
+        Unfinished Workouts
+      </Text>
+
+      <ScrollView
+        style={{ maxHeight: 300, marginBottom: 12 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {workouts.filter(w => !w.is_completed).length === 0 ? (
+          <Text style={{ textAlign: 'center', color: textColor }}>
+            No incomplete workouts.
           </Text>
-
-          {workouts.filter(w => !w.is_completed).length === 0 ? (
-            <Text style={{ textAlign: 'center', color: textColor }}>
-              No incomplete workouts.
+        ) : (
+          workouts
+            .filter(w => !w.is_completed)
+            .map((workout) => (
+          <TouchableOpacity
+            key={workout.id}
+            onPress={async () => {
+              await completeWorkout(workout.id);
+              setShowFinishModal(false);
+            }}
+            style={{
+              padding: 14,
+              backgroundColor: '#E5F1FF',
+              borderRadius: 10,
+              marginBottom: 10,
+              borderWidth: 1,
+              borderColor: '#D0E2FF',
+            }}
+          >
+            <Text style={{ color: '#333', fontWeight: '600' }}>{workout.name}</Text>
+            <Text style={{ fontSize: 12, color: '#666' }}>
+              {workout.date.toDateString?.() ?? '—'}
             </Text>
-          ) : (
-            workouts
-              .filter(w => !w.is_completed)
-              .map((workout) => (
-                <TouchableOpacity
-                  key={workout.id}
-                  onPress={() => {
-                    setShowFinishModal(false);
-                    router.push({
-                      pathname: '/finish',
-                      params: { workoutId: workout.id },
-                    });
-                  }}
-                  style={{
-                    padding: 12,
-                    backgroundColor: '#F5F8FF',
-                    borderRadius: 10,
-                    marginBottom: 10,
-                  }}
-                >
-                  <Text style={{ color: textColor }}>{workout.name}</Text>
-                </TouchableOpacity>
-              ))
-          )}
+          </TouchableOpacity>
 
-          <Button
-            title="Close"
-            onPress={() => setShowFinishModal(false)}
-            variant="outline"
-            style={{ marginTop: 10 }}
-          />
-        </View>
-      </View>
-    </Modal>
+            ))
+        )}
+      </ScrollView>
+
+      <Button
+        title="Close"
+        onPress={() => setShowFinishModal(false)}
+        variant="outline"
+        style={{ marginTop: 10 }}
+      />
+    </View>
+  </View>
+</Modal>
     </SafeAreaView>
   );
 };

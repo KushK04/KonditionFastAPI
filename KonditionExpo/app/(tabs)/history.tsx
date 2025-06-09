@@ -11,9 +11,30 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { apiService, WorkoutResponse } from '@/services/api';
+import { apiService } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
+
+export type Exercise = {
+  id: string;
+  name: string;
+  sets?: number;
+  reps?: number;
+  weight?: number;
+  category: string;
+};
+
+export type WorkoutResponse = {
+  id: string;
+  name: string;
+  description?: string;
+  is_completed: boolean;
+  created_at: string;
+  completed_date?: string;
+  duration_minutes?: number;
+  scheduled_date?: number;
+  exercises: Exercise[];  // <-- include this
+};
 
 const WorkoutHistoryScreen = () => {
   const { user } = useAuth();
@@ -34,7 +55,7 @@ const WorkoutHistoryScreen = () => {
 
       //const workoutData = await apiService.getWorkouts(); - Uses old api.ts, idk
 
-      const response = await axios.get('http://localhost:8000/api/v1/workouts/', {
+      const response = await axios.get('http://localhost:8000/api/v1/workouts/exercises/', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -77,15 +98,25 @@ const WorkoutHistoryScreen = () => {
     });
   };
 
-  const formatDuration = (minutes?: number) => {
-    if (!minutes) return 'N/A';
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
-    return `${mins}m`;
+  const formatDuration = (workout: WorkoutResponse): string => {
+    if (!workout.is_completed) return 'N/A';
+  
+    const start = workout.scheduled_date ? new Date(workout.scheduled_date) : null;
+    const end = workout.completed_date ? new Date(workout.completed_date) : null;
+  
+    if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) return 'N/A';
+  
+    const diffMs = end.getTime() - start.getTime();
+    if (diffMs <= 0) return 'N/A';
+  
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+  
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
+  
 
   const getCompletionStatus = (workout: WorkoutResponse) => {
     return workout.is_completed ? 'Completed' : 'Incomplete';
@@ -95,54 +126,66 @@ const WorkoutHistoryScreen = () => {
     return workout.is_completed ? '#4CAF50' : '#FF9800';
   };
 
-  const handleWorkoutPress = (workout: WorkoutResponse) => {
+  /*const handleWorkoutPress = (workout: WorkoutResponse) => {
     // Navigate to the detailed workout view
     router.push({
       pathname: '/workout-detail',
       params: { workoutId: workout.id }
     });
-  };
+  }; Not needed */
 
   const renderWorkoutItem = (workout: WorkoutResponse) => (
-    <TouchableOpacity
-      key={workout.id}
-      style={styles.workoutCard}
-      onPress={() => handleWorkoutPress(workout)}
-    >
+    <View key={workout.id} style={styles.workoutCard}>
+      {/* Workout Header */}
       <View style={styles.workoutHeader}>
         <Text style={styles.workoutName}>{workout.name}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(workout) }]}>
           <Text style={styles.statusText}>{getCompletionStatus(workout)}</Text>
         </View>
       </View>
-      
+  
+      {/* Workout Date */}
       <Text style={styles.workoutDate}>
         {formatDate(workout.completed_date || workout.created_at)}
       </Text>
-      
+  
+      {/* Workout Metadata */}
       <View style={styles.workoutDetails}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Duration</Text>
-          <Text style={styles.detailValue}>{formatDuration(workout.duration_minutes)}</Text>
-        </View>
-        
+  <View style={styles.detailItem}>
+    <Text style={styles.detailLabel}>Duration</Text>
+    <Text style={styles.detailValue}>{formatDuration(workout)}</Text>
+  </View>
+  
         <View style={styles.detailItem}>
           <Text style={styles.detailLabel}>Exercises</Text>
-          <Text style={styles.detailValue}>{workout.exercise_count || 0}</Text>
+          <Text style={styles.detailValue}>{workout.exercises?.length || 0}</Text>
         </View>
       </View>
-      
+  
+      {/* Workout Description */}
       {workout.description && (
         <Text style={styles.workoutDescription} numberOfLines={2}>
           {workout.description}
         </Text>
       )}
-      
-      <View style={styles.viewDetailsContainer}>
-        <Text style={styles.viewDetailsText}>Tap to view exercises →</Text>
-      </View>
-    </TouchableOpacity>
+  
+      {/* Exercise List */}
+      {workout.exercises?.length > 0 && (
+        <View style={{ marginTop: 12 }}>
+          <Text style={{ fontWeight: '600', color: '#444', marginBottom: 4 }}>Exercises:</Text>
+          {workout.exercises.map((ex) => (
+            <View key={ex.id} style={{ marginBottom: 6, paddingLeft: 8 }}>
+              <Text style={{ color: '#333' }}>
+                • {ex.name} — {ex.sets || 0} × {ex.reps || 0} @ {ex.weight || 0} lbs
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
   );
+  
+  
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -179,9 +222,12 @@ const WorkoutHistoryScreen = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Workout History</Text>
         <Text style={styles.headerSubtitle}>
-          {workouts.length} {workouts.length === 1 ? 'workout' : 'workouts'} completed
+          {workouts.length} Total —{" "}
+          {workouts.filter(w => !w.is_completed).length} In Progress —{" "}
+          {workouts.filter(w => w.is_completed).length} Finished
         </Text>
       </View>
+
 
       <ScrollView
         style={styles.scrollView}
@@ -195,7 +241,19 @@ const WorkoutHistoryScreen = () => {
         ) : !Array.isArray(workouts) || workouts.length === 0 ? (
           renderEmptyState()
         ) : (
-          workouts.map(renderWorkoutItem)
+          [...workouts]
+        .sort((a, b) => {
+          // 1. Completed workouts first
+          if (a.is_completed !== b.is_completed) {
+            return b.is_completed ? 1 : -1;
+          }
+
+          // 2. Then sort by date (fallback to created_at if completed_date is missing)
+          const aDate = new Date(a.completed_date || a.created_at).getTime();
+          const bDate = new Date(b.completed_date || b.created_at).getTime();
+          return bDate - aDate;
+        })
+        .map(renderWorkoutItem)
         )}
       </ScrollView>
     </SafeAreaView>
