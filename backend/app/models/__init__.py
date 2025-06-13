@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel  # Re-export SQLModel for Alembic
 
 from app.models.token import Message, NewPassword, Token, TokenPayload
-from app.models.notifications import PushToken, CustomReminder
+from app.models.notifications import PushToken
 from app.models.user import (
     UpdatePassword,
     User,
@@ -44,6 +44,11 @@ from app.models.workout import (
     PersonalBestPublic,
     WorkoutWithExercisesPublic
 )
+
+from app.models.reminder import (
+    CustomReminder
+)
+
 # not needed - from app.models.personal_best import PersonalBest, PersonalBestCreate
 
 __all__ = [
@@ -95,5 +100,6 @@ __all__ = [
     "PersonalBest",
     "PersonalBestCreate",
     "PersonalBestPublic",
-    "WorkoutWithExercisesPublic"
+    "WorkoutWithExercisesPublic",
+    "CustomReminder",
 ]

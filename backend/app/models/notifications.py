@@ -37,17 +37,3 @@ class CustomReminderBase(SQLModel):
         description="UTC timestamp when this reminder should fire",
     )
     message: str = Field(max_length=255, description="Your reminder text")
-
-
-class CustomReminder(CustomReminderBase, table=True):
-    """
-    A one-off reminder. Once sent, we’ll set sent_at so it isn’t sent again.
-    """
-    __tablename__ = "custom_reminders"
-
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    sent_at: Optional[datetime] = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True)),
-        description="Set to now() after sending",
-    )

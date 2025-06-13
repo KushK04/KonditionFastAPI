@@ -27,6 +27,7 @@ import app.models.item  # noqa
 import app.models.social  # noqa
 import app.models.token  # noqa
 import app.models.workout  # noqa
+import app.models.reminder 
 
 target_metadata = SQLModel.metadata
 

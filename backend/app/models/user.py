@@ -1,8 +1,10 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
+from app.models.reminder import CustomReminder
+
 
 # Shared properties
 class UserBase(SQLModel):
@@ -76,6 +78,10 @@ class User(UserBase, table=True):
     workouts: List["Workout"] = Relationship(
         back_populates="user", cascade_delete=True
     )
+    
+    # Custom Reminders
+    custom_reminders: List[CustomReminder] = Relationship(back_populates="user")
+
 
 
 # Properties to return via API, id is always required
