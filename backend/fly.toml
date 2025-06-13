@@ -1,0 +1,28 @@
+# fly.toml app configuration file generated for konditionfastapi-young-waterfall-5813 on 2025-06-12T18:29:45-07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "konditionfastapi-young-waterfall-5813"
+
+[build]
+dockerfile = "Dockerfile"
+context = "."
+primary_region = 'sjc'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+
+[[vm]]
+  size = 'shared-cpu-1x'
+
+[env]
+  PROJECT_NAME = "Kondition"
+  ENVIRONMENT = "production"
+

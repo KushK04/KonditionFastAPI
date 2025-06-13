@@ -13,14 +13,19 @@
       "serviceWorkerPath": "service-worker.js"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.themagmar9000.KonditionExpo",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.themagmar9000.KonditionExpo"
     },
     "web": {
       "bundler": "metro",
@@ -48,6 +53,19 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d6935ccc-7623-41ee-8dd2-fc3666484907"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d6935ccc-7623-41ee-8dd2-fc3666484907"
+    },
+    "owner": "themagmar9000"
   }
 }

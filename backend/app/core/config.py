@@ -1,6 +1,9 @@
 import secrets
 import warnings
 from typing import Annotated, Any, Literal
+# from app.core.config import settings
+
+import os 
 
 from pydantic import (
     AnyUrl,
@@ -59,15 +62,19 @@ class Settings(BaseSettings):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        if db_url := os.getenv("DATABASE_URL"):
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+            return db_url  # Fly.io injects this when `flyctl postgres attach` is run
         return MultiHostUrl.build(
-            scheme="postgresql+psycopg",
+            scheme="postgresql+psycopg2",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,
             port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
-        )
+            path=f"/{self.POSTGRES_DB}",
+        ).replace("///", "//")
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
@@ -118,3 +125,6 @@ class Settings(BaseSettings):
 
 
 settings = Settings()  # type: ignore
+
+print("🛠️  settings.SQLALCHEMY_DATABASE_URI:", settings.SQLALCHEMY_DATABASE_URI)
+print("🛠️  raw os.environ['DATABASE_URL']:", os.getenv("DATABASE_URL"))
