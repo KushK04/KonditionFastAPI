@@ -76,7 +76,7 @@ export default function RootLayout() {
 
       // 2c) Send that token to your FastAPI backend
       try {
-        await fetch("http://localhost:8000/api/v1/notifications/register_push_token", {
+        await fetch("https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/notifications/register_push_token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

@@ -28,7 +28,7 @@ export default function NotificationScreen() {
   useEffect(() => {
     // Fetch the last 7 days of quotes from the backend
     // Replace "localhost" with your LAN IP or actual host when testing on device
-    fetch("http://localhost:8000/api/v1/notifications/quotes")
+    fetch("https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/notifications/quotes")
       .then((res) => res.json())
       .then((data: QuoteItem[]) => {
         setNotifications(data); // data is an array like [{ date: "2025-06-05", text: "..." }, …]

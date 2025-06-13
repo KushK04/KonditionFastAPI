@@ -35,7 +35,7 @@ const WorkoutItem = ({ workout, onPress }: WorkoutItemProps) => {
   useEffect(() => {
     const loadStats = async () => {
       await getExercises(workout.id); // this updates global `exercises`, which we can't reliably read here
-      const res = await fetch(`http://localhost:8000/api/v1/workouts/${workout.id}/exercises`, {
+      const res = await fetch(`https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/workouts/${workout.id}/exercises`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

@@ -31,7 +31,7 @@ export const API_CONFIG = {
 // Platform-specific base URLs
 const API_URLS = {
   // Web platform - works with localhost
-  web: 'http://localhost:8000/api/v1',
+  web: 'https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1',
   
   // iOS Simulator - works with localhost
   ios_simulator: 'http://localhost:8000/api/v1',

@@ -55,7 +55,7 @@ const WorkoutHistoryScreen = () => {
 
       //const workoutData = await apiService.getWorkouts(); - Uses old api.ts, idk
 
-      const response = await axios.get('http://localhost:8000/api/v1/workouts/exercises/', {
+      const response = await axios.get('https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/workouts/exercises/', {
         headers: {
           Authorization: `Bearer ${token}`,
         },

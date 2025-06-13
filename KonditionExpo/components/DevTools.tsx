@@ -85,7 +85,7 @@ export const DevTools: React.FC<DevToolsProps> = ({ visible, onClose }) => {
             <Text style={styles.sectionTitle}>Quick URLs</Text>
             <TouchableOpacity 
               style={styles.quickButton} 
-              onPress={() => setCustomUrl('http://localhost:8000/api/v1')}
+              onPress={() => setCustomUrl('https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1')}
             >
               <Text style={styles.quickButtonText}>Localhost (Web/iOS Sim)</Text>
             </TouchableOpacity>

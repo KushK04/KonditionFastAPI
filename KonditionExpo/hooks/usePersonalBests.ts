@@ -19,7 +19,7 @@ export const usePersonalBests = () => {
       setLoading(true);
       try {
         const token = await getAccessToken();
-        const res = await fetch("http://localhost:8000/api/v1/personal-bests", {
+        const res = await fetch("https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/personal-bests", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",

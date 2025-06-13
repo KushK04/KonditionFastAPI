@@ -98,7 +98,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
   const completeWorkout = async (workoutId: string) => {
     try {
       const response = await axios.put(
-        `http://localhost:8000/api/v1/workouts/${workoutId}/complete`,
+        `https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/workouts/${workoutId}/complete`,
         {},
         {
           headers: {
@@ -117,7 +117,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
     try {
       const payload = transformWorkoutForBackend(workout);
       const response = await axios.post(
-        'http://localhost:8000/api/v1/workouts/', // Replace with deployment endpoint
+        'https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/workouts/', // Replace with deployment endpoint
         payload,
         {
           headers: {
@@ -145,7 +145,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
   const getWorkouts = async () => {
     try {
       console.log("About to get workouts with token: ", token);
-      const response = await axios.get('http://localhost:8000/api/v1/workouts/', {
+      const response = await axios.get('https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/workouts/', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -176,7 +176,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
 
   const getExercises = async (workoutID: string) => {
     try{
-      const exerReq = 'http://localhost:8000/api/v1/workouts/' + workoutID + '/exercises';
+      const exerReq = 'https://konditionfastapi-young-waterfall-5813.fly.dev/api/v1/workouts/' + workoutID + '/exercises';
       const response = await axios.get(exerReq, {
         headers: {
           Authorization: `Bearer ${token}`,
